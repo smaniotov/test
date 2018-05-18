@@ -1,0 +1,19 @@
+# Ignore all dotfiles...
+.*
+
+# Except for
+!.gitignore
+!.editorconfig
+!.storybook
+!.npmrc
+
+#Ignore
+node_modules/
+dist/
+target/
+npm-debug.log
+yarn.lock
+package-lock.json
+
+#Ignore Intellij files
+*.iml
