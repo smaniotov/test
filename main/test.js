@@ -1,19 +1,26 @@
 const AWS = require('aws-sdk')
-const endpoint = new AWS.Endpoint('localhost:8000')
-const unzip = require('unzip')
+const unzip = require('unzip-stream')
 const es = require('event-stream')
 const request = require('request')
 const cheerio = require('cheerio')
-const {Writable} = require('stream')
-
-const config = new AWS.Config({
-  region: 'us-east-1',
-  accessKeyId: 'AKIAJRNLULM654J7WJJA',
-  secretAccessKey: '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'
+const dateParse = require('./date-parse')
+const {
+  StringDecoder
+} = require('string_decoder');
+const iconv = require("iconv-lite")
+const {
+  Writable
+} = require('stream')
+AWS.config.update({
+  region: 'us-west-2'
 })
-const dynamo = new AWS.DynamoDB({endpoint, config})
+const endpoint = new AWS.Endpoint('http://localhost:8000')
+const dynamo = new AWS.DynamoDB({
+  endpoint
+})
+const startTime = Date.now()
 
-const TableName = process.env.TABLENAME
+const TableName = process.env.TABLENAME || 'mx-postalcode'
 
 const options = {
   url: 'http://www.correosdemexico.gob.mx/lservicios/servicios/CodigoPostal_Exportar.aspx',
@@ -28,7 +35,7 @@ const options = {
 
 const postOptions = {
   ...options,
-  formData: {§
+  formData: {
     'rblTipo': 'txt',
     'cboEdo': '00',
     'btnDescarga.x': 73,
@@ -37,8 +44,8 @@ const postOptions = {
 }
 
 class WritableBuffer extends Writable {
-  constructor (options) {
-    function write (chunk, enc, callback) {
+  constructor(options, isLatin) {
+    function write(chunk, enc, callback) {
       this.chunks.push(chunk)
       callback()
     }
@@ -51,7 +58,7 @@ class WritableBuffer extends Writable {
 }
 
 const getWebPage = () => {
-  const writable = new WritableBuffer().setDefaultEncoding('utf8')
+  const writable = new WritableBuffer()
 
   return new Promise((resolve, reject) => {
     request(options)
@@ -68,8 +75,12 @@ const getWebPage = () => {
 
 const getRequestFields = (webpage) => {
   const $ = cheerio.load(webpage)
+  const lastUpdateSpan = $('#lblfec').text()
+  const lastUpdate = dateParse(lastUpdateSpan)
+  
+  console.log('Last updated: ' + lastUpdate.toISOString())
 
-  function getFieldAttrList (attr) {
+  function getFieldAttrList(attr) {
     return $('input').map(function (index, element) {
       if ($(this).attr('name').includes('__')) {
         return $(this).attr(attr)
@@ -134,6 +145,7 @@ const index = async () => {
         let isRow = false
         if (fileName === entry.path) {
           entry
+            .pipe(iconv.decodeStream('latin1'))
             .pipe(es.split('\n'))
             .pipe(es.mapSync(async (line) => {
               if (line.includes('|')) {
@@ -149,6 +161,8 @@ const index = async () => {
               }
             }))
         }
+      }).on('end', () => {
+        console.log("Terminou em " + (Date.now() - startTime) / 1000 + " segundos!")
       })
   } catch (e) {
     console.error(e)

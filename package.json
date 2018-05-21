@@ -4,20 +4,20 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "standard --fix; node main/test.js"
+    "test": "node main/test.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "request": "2.86.0",
-    "standard": "11.0.1",
-    "unzip": "0.1.11"
+    "standard": "11.0.1"
   },
   "dependencies": {
     "aws-sdk": "^2.243.1",
     "cheerio": "1.0.0-rc.2",
     "event-stream": "3.3.4",
-    "iconv-lite": "0.4.23"
+    "iconv-lite": "0.4.23",
+    "unzip-stream": "^0.3.0"
   }
 }
