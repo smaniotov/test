@@ -1,0 +1,2 @@
+echo "Create database"
+awslocal dynamodb create-table --table-name mx-postalcode --attribute-definitions AttributeName=code,AttributeType=S AttributeName=data,AttributeType=S --key-schema AttributeName=code,KeyType=HASH AttributeName=data,KeyType=RANGE --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
