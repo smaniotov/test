@@ -22,7 +22,7 @@ module.exports = (string) => {
     const [day] = string.match(/\d{2}/)
     const [year] = string.match(/\d{4}/)
     
-    return new Date(year, month, day)
+    return new Date(year, month, day).toISOString()
   } catch (e) {
     console.log('Error in date detect')
     throw e
