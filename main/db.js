@@ -7,20 +7,25 @@ const Methods = {
   GET: 'getItem'
 }
 
-const fixModel = (TableName, params) => {
-  return Object.keys(params).reduce((out, key) => {
-    out.Item[key] = {'S': params[key]}
-    return out
-  }, {TableName, Item: {}})
+const KeyNames = {
+  Key: 'Key',
+  Item: 'Item'
 }
 
-const dynamoAction = (method) => (TableName, params) => new Promise((resolve, reject) => {
-  dynamo[method](fixModel(TableName, params), (err, data) => {
+const normalizeModel = (TableName, initial, params) => {
+  return Object.keys(params).reduce((out, key) => {
+    out[initial][key] = {'S': params[key]}
+    return out
+  }, {[initial]: {}, TableName})
+}
+
+const dynamoAction = (method, keyName) => (TableName, params) => new Promise((resolve, reject) => {
+  dynamo[method](normalizeModel(TableName, keyName, params), (err, data) => {
     if(err) reject(err)
     resolve(data)
   })
 })
 
 
-exports.put = dynamoAction(Methods.PUT)
-exports.get = dynamoAction(Methods.GET)
+exports.put = dynamoAction(Methods.PUT, KeyNames.Item)
+exports.get = dynamoAction(Methods.GET, KeyNames.Key)

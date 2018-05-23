@@ -6,6 +6,7 @@ const request = require('request')
 const db = require('./db.js')
 const dateParse = require('./date-parse')
 const iconv = require('iconv-lite')
+const util = require('util');
 const startTime = Date.now()
 
 //  Table names
@@ -23,8 +24,10 @@ const index = async () => {
     const updatedAt = dateParse(lastUpdateSpan)
     
     try {
-      const isUpdated = Boolean(await db.get(historyTable, {updatedAt}))
-      console.log('Code is already updated')
+      const isUpdated = await db.get(historyTable, {updatedAt})
+      console.log(isUpdated)
+      if (Object.keys(isUpdated).length === 0) throw new Error('Code out of date')
+      console.log('Database is already updated')
     } catch (e) {
       console.log(e)
       console.log('Last updated: ' + updatedAt)
@@ -41,23 +44,31 @@ const index = async () => {
 const fillDatabase = (requestFields) => {
   request.post(requestConfig.postOptions(requestFields))
       .pipe(unzip.Parse())
-      .on('entry', function (entry) {
+      .on('error', (err) => {
+        throw err
+      })
+      .on('entry', (entry) => {
         let header
         let isRow = false
         entry
           .pipe(iconv.decodeStream('latin1'))
           .pipe(es.split('\n'))
           .pipe(es.mapSync(async (line) => {
+            const ps = es.pause()
+            console.log(util.inspect(process.memoryUsage()))
             if (line.includes('|')) {
               if (isRow) {
                 try {
-                  return await fillDynamo(line, header)
+                  await fillDynamo(line, header)
+                  ps.resume()
+                  return {}
                 } catch (e) {
                   throw e
                 }
               }
               header = line.split('|').map(label => label.replace(' ', '_').toLowerCase())
               isRow = true
+              ps.resume()
             }
           }))
       }).on('end', () => {
