@@ -1,5 +1,3 @@
-const request = require('request')
-
 const options = {
   url: 'http://www.correosdemexico.gob.mx/lservicios/servicios/CodigoPostal_Exportar.aspx',
   headers: {
