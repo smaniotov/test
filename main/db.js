@@ -2,29 +2,24 @@ const AWS = require('aws-sdk')
 AWS.config.update({region: 'us-west-2', endpoint: 'http://localhost:8000'})
 const dynamo = new AWS.DynamoDB()
 
-const Methods = {
-  PUT: 'putItem',
-  GET: 'getItem'
-}
+const TableName = process.env.ZIPTABLE || 'mx-postalcode'
 
-const KeyNames = {
-  Key: 'Key',
-  Item: 'Item'
-}
+exports.get = (code) => {
+  const params = {
+    TableName,
+    Key: {
+      code: {S: code}
+    }
+  }
 
-const normalizeModel = (TableName, initial, params) => {
-  return Object.keys(params).reduce((out, key) => {
-    out[initial][key] = {'S': params[key]}
-    return out
-  }, {[initial]: {}, TableName})
-}
-
-const dynamoAction = (method, keyName) => (TableName, params) => new Promise((resolve, reject) => {
-  dynamo[method](normalizeModel(TableName, keyName, params), (err, data) => {
-    if (err) reject(err)
-    resolve(data)
+  return new Promise((resolve, reject) => {
+    dynamo.getItem(params, (err, data) => {
+      if (err) reject(err)
+      try {
+        resolve(JSON.parse(data.Item.data.S))
+      } catch (e) {
+        resolve(data)
+      }
+    })
   })
-})
-
-exports.put = dynamoAction(Methods.PUT, KeyNames.Item)
-exports.get = dynamoAction(Methods.GET, KeyNames.Key)
+}

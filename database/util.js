@@ -1,7 +1,7 @@
 const request = require('request')
 const requestConfig = require('./request-config')
-const separator = '|'
 const cheerio = require('cheerio')
+const separator = '|'
 
 const normalizeModel = (code, prevData, currentData) => {
   const keys = Object.keys(prevData.data).concat(Object.keys(currentData.data))
@@ -55,7 +55,7 @@ const dateParse = (string) => {
 
     return new Date(year, month, day).toISOString()
   } catch (e) {
-    console.error('Fatal Error: Not been able to parse last updated date.')
+    console.error('Fatal Error: Not been able to parse last update date.')
     throw e
   }
 }

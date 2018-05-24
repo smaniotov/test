@@ -4,20 +4,21 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node main/test.js"
+    "test": "sh database/db.sh; ZIPTABLE=mx-postalcode HISTORYTABLE=mx-zip-lastupdate node database/index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "express": "^4.16.3",
     "request": "2.86.0",
     "standard": "11.0.1"
   },
   "dependencies": {
-    "aws-sdk": "^2.243.1",
+    "aws-sdk": "2.243.1",
     "cheerio": "1.0.0-rc.2",
     "event-stream": "3.3.4",
     "iconv-lite": "0.4.23",
-    "unzip-stream": "^0.3.0"
+    "unzip-stream": "0.3.0"
   }
 }

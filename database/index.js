@@ -21,7 +21,7 @@ const index = async () => {
     if (Object.keys(updatedAtDate).length === 0) {
       const requestFields = webpageUtils.getRequestFields()
       console.info('New version: ' + updatedAt)
-      await fillDynamoDB(requestFields)
+      await populateDynamoDB(requestFields)
       await db.put(historyTable, {updatedAt})
     } else {
       console.info('Database is already updated')
@@ -31,7 +31,16 @@ const index = async () => {
   }
 }
 
-const fillDynamoDB = async (requestFields) => new Promise((resolve, reject) => {
+const putItem = async (line) => {
+  try {
+    line.data = JSON.stringify(line.data)
+    Promise.resolve(await db.put(zipTable, line))
+  } catch (err) {
+    Promise.reject(err)
+  }
+}
+
+const populateDynamoDB = async (requestFields) => new Promise((resolve, reject) => {
   request.post(requestConfig.postOptions(requestFields))
     .pipe(unzip.Parse())
     .on('error', reject)
@@ -47,10 +56,10 @@ const fillDynamoDB = async (requestFields) => new Promise((resolve, reject) => {
           if (line.includes(separator)) {
             if (isRow) {
               const normalizedData = normalizeAddress(prevLine, line, header)
-              const pivotLine = prevLine
+              const pivotData = prevLine
               prevLine = normalizedData
-              return pivotLine && pivotLine.code !== normalizedData.code
-                ? pivotLine
+              return pivotData && pivotData.code !== normalizedData.code
+                ? pivotData
                 : null
             }
             header = line.split(separator)
@@ -59,16 +68,13 @@ const fillDynamoDB = async (requestFields) => new Promise((resolve, reject) => {
         }))
         .pipe(es.mapSync(async (line) => {
           if (line) {
-            try {
-              line.data = JSON.stringify(line.data)
-              await db.put(zipTable, line)
-            } catch (err) {
-              console.error(err)
-            }
+            await putItem(line)
           }
-        }))
-    }).on('end', () => {
-      console.info('Finished in ' + (Date.now() - startTime) / 1000 + ' segundos!')
+        })).on('end', async () => {
+          await putItem(prevLine)
+        })
+    }).on('end', async () => {
+      console.info('Finished in ' + (Date.now() - startTime) / 1000 + ' seconds!')
       resolve('Done.')
     })
 })
